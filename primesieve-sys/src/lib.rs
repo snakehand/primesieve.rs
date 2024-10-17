@@ -20,6 +20,8 @@
 
 include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
 
+pub const PRIMESIEVE_ERROR: u64 = core::u64::MAX;
+
 // These `fn`s are from the C header "primesieve/primesieve_iterator.h", but
 // are declared as `static inline`, so we must bind to them in a roundabout way.
 #[inline]

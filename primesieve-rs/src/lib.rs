@@ -15,8 +15,6 @@
 
 use std::{mem, slice};
 
-extern crate libc;
-
 pub extern crate primesieve_sys as raw;
 
 extern crate num_traits;
@@ -37,8 +35,8 @@ pub mod sieve_size {
     use super::{debug_assert_unreachable, num_cast};
 
     pub fn set<N: Into<u16>>(sieve_size: N) -> bool {
-        if let Some(n_) = num_cast::<u16, super::libc::c_int>(sieve_size.into()) {
-            if n_ >= 1 && n_ <= 2048 {
+        if let Some(n_) = num_cast::<u16, i32>(sieve_size.into()) {
+            if (1..=2048).contains(&n_) {
                 unsafe {
                     super::raw::primesieve_set_sieve_size(n_);
                 }
@@ -53,7 +51,7 @@ pub mod sieve_size {
 
     #[inline]
     pub fn get() -> u16 {
-        num_cast::<super::libc::c_int, u16>(unsafe { super::raw::primesieve_get_sieve_size() })
+        num_cast::<i32, u16>(unsafe { super::raw::primesieve_get_sieve_size() })
             .unwrap_or_else(|| unsafe { debug_assert_unreachable() })
     }
 }
@@ -63,7 +61,7 @@ pub mod num_threads {
 
     pub fn set<N: Into<Option<u64>>>(num_threads: N) -> bool {
         if let Some(n) = num_threads.into() {
-            if let Some(n_) = num_cast::<u64, super::libc::c_int>(n) {
+            if let Some(n_) = num_cast::<u64, i32>(n) {
                 if n_ >= 1 {
                     unsafe {
                         super::raw::primesieve_set_num_threads(n_);
@@ -85,13 +83,12 @@ pub mod num_threads {
 
     #[inline]
     pub fn get() -> u64 {
-        num_cast::<super::libc::c_int, u64>(unsafe { super::raw::primesieve_get_num_threads() })
+        num_cast::<i32, u64>(unsafe { super::raw::primesieve_get_num_threads() })
             .unwrap_or_else(|| unsafe { debug_assert_unreachable() })
     }
 }
 
-
-#[derive(Debug,PartialEq,Eq,PartialOrd,Ord,Hash,Clone,Copy)]
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Clone, Copy)]
 pub enum Tupling {
     One = 1,
     Two = 2,
@@ -115,7 +112,7 @@ macro_rules! from_tupling_impl {
                 v as $t
             }
         }
-    }
+    };
 }
 
 from_tupling_impl!(u8);
@@ -162,7 +159,7 @@ macro_rules! to_tupling_impl {
                 }
             }
         }
-    }
+    };
 }
 
 to_tupling_impl!(u8);
@@ -176,7 +173,7 @@ to_tupling_impl!(i64);
 to_tupling_impl!(usize);
 to_tupling_impl!(isize);
 
-#[derive(Debug,PartialEq,Eq,Hash,Clone,Copy)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
 pub struct Count {
     pub tupling: Tupling,
     pub start: u64,
@@ -232,7 +229,7 @@ impl Default for Count {
     }
 }
 
-#[derive(Debug,PartialEq,Eq,Hash,Clone,Copy)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
 pub struct Nth {
     pub n: i64,
     pub start: u64,
@@ -245,7 +242,7 @@ impl Nth {
     }
 
     pub fn after<N: Into<u64>>(mut self, n: N) -> Option<Self> {
-        if let Some(n_) = num_cast::<u64, libc::int64_t>(n.into()) {
+        if let Some(n_) = num_cast::<u64, i64>(n.into()) {
             if n_ >= 0 {
                 self.n = -n_;
                 Some(self)
@@ -258,7 +255,7 @@ impl Nth {
     }
 
     pub fn before<N: Into<u64>>(mut self, n: N) -> Option<Self> {
-        if let Some(n_) = num_cast::<u64, libc::int64_t>(n.into()) {
+        if let Some(n_) = num_cast::<u64, i64>(n.into()) {
             if n_ > 0 {
                 self.n = -n_;
                 Some(self)
@@ -293,7 +290,7 @@ impl Default for Nth {
     }
 }
 
-#[derive(Debug,PartialEq,Eq,Hash,Clone,Copy)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
 pub struct Print {
     pub tupling: Tupling,
     pub start: u64,
@@ -349,52 +346,52 @@ impl Default for Print {
 }
 
 pub unsafe trait Generable: Clone {
-    fn type_key() -> libc::c_int;
+    fn type_key() -> u32;
 }
 
 unsafe impl Generable for u16 {
     #[inline]
-    fn type_key() -> libc::c_int {
+    fn type_key() -> u32 {
         raw::UINT16_PRIMES
     }
 }
 
 unsafe impl Generable for u32 {
     #[inline]
-    fn type_key() -> libc::c_int {
+    fn type_key() -> u32 {
         raw::UINT32_PRIMES
     }
 }
 
 unsafe impl Generable for u64 {
     #[inline]
-    fn type_key() -> libc::c_int {
+    fn type_key() -> u32 {
         raw::UINT64_PRIMES
     }
 }
 
 unsafe impl Generable for i16 {
     #[inline]
-    fn type_key() -> libc::c_int {
+    fn type_key() -> u32 {
         raw::INT16_PRIMES
     }
 }
 
 unsafe impl Generable for i32 {
     #[inline]
-    fn type_key() -> libc::c_int {
+    fn type_key() -> u32 {
         raw::INT32_PRIMES
     }
 }
 
 unsafe impl Generable for i64 {
     #[inline]
-    fn type_key() -> libc::c_int {
+    fn type_key() -> u32 {
         raw::INT64_PRIMES
     }
 }
 
-#[derive(Debug,PartialEq,Eq,Hash,Clone,Copy)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
 pub struct Generate {
     pub start: u64,
     pub stop: u64,
@@ -420,16 +417,17 @@ impl Generate {
     }
 
     pub fn run<N: Generable>(self) -> Vec<N> {
-        let mut size: libc::size_t = 0;
+        let mut size: usize = 0;
         let raw_arr = unsafe {
-            raw::primesieve_generate_primes(self.start, self.stop, &mut size, N::type_key())
+            raw::primesieve_generate_primes(self.start, self.stop, &mut size, N::type_key() as i32)
         };
         let result: Vec<N> = unsafe {
-                slice::from_raw_parts(raw_arr as *mut N,
-                                                       num_cast::<libc::size_t, usize>(size)
-                                                           .expect("primesieve error"))
-            }
-            .to_owned();
+            slice::from_raw_parts(
+                raw_arr as *mut N,
+                size,
+            )
+        }
+        .to_owned();
         unsafe {
             raw::primesieve_free(raw_arr);
         }
@@ -447,7 +445,7 @@ impl Default for Generate {
 #[derive(Debug)]
 pub struct Iter {
     raw_iter: Box<raw::primesieve_iterator>,
-    is_reversed: bool,
+    _is_reversed: bool,
 }
 
 impl Iter {
@@ -456,7 +454,7 @@ impl Iter {
         unsafe { raw::primesieve_init(ri.as_mut()) };
         Iter {
             raw_iter: ri,
-            is_reversed: false,
+            _is_reversed: false,
         }
     }
 }
